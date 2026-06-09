@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle } from 'lucide-react';
 import './App.css';
 
-// Import newly created components
+// Import components
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -12,23 +12,51 @@ import Doctors from './components/Doctors';
 import Testimonials from './components/Testimonials';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import AuthModal from './components/AuthModal';
+import ProfilePage from './components/ProfilePage';
 
 /**
  * Main Application Component
  * 
  * Concept Explanations:
- * 1. Root Structure: App coordinates the global state and assemblies the grid system.
- * 2. useState: Used to track overlay states: `isAppointmentOpen` and `isLoginOpen` to toggle dialogs.
- * 3. Conditional Rendering: Uses `{condition && <JSX />}` to display interactive modal overlays when requested.
+ * 1. Root Structure: App coordinates the global state and page routing.
+ * 2. useState: Used to track current page ('home' or 'profile') and overlay states.
+ * 3. Conditional Rendering: Swaps landing page with ProfilePage.
  */
 function App() {
   // --- STATE HOOKS ---
+  
+  // User Authentication State
+  const [activeUser, setActiveUser] = useState(() => {
+    const storedActive = localStorage.getItem('medcare_active_user');
+    return storedActive ? JSON.parse(storedActive) : null;
+  });
+
+  // Page Navigation State ('home' or 'profile')
+  const [currentPage, setCurrentPage] = useState(() => {
+    const storedActive = localStorage.getItem('medcare_active_user');
+    return storedActive ? 'profile' : 'home';
+  });
+
   // Modal toggle state variables
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authView, setAuthView] = useState('login'); // 'login' or 'signup'
+
+  // Global Appointments List State
+  const [appointments, setAppointments] = useState(() => {
+    return JSON.parse(localStorage.getItem('medcare_appointments') || '[]');
+  });
 
   // Appointment Form input state variables
-  const [patientName, setPatientName] = useState('');
-  const [patientEmail, setPatientEmail] = useState('');
+  const [patientName, setPatientName] = useState(() => {
+    const storedActive = localStorage.getItem('medcare_active_user');
+    return storedActive ? JSON.parse(storedActive).name : '';
+  });
+  const [patientEmail, setPatientEmail] = useState(() => {
+    const storedActive = localStorage.getItem('medcare_active_user');
+    return storedActive ? JSON.parse(storedActive).email : '';
+  });
   const [department, setDepartment] = useState('Emergency Care');
   const [appointDate, setAppointDate] = useState('');
   const [appointTime, setAppointTime] = useState('');
@@ -37,21 +65,60 @@ function App() {
 
   // --- EVENT HANDLERS ---
   
+  // Auth handlers
+  const handleAuthSuccess = (user) => {
+    setActiveUser(user);
+    localStorage.setItem('medcare_active_user', JSON.stringify(user));
+    
+    // Auto fill appointment details
+    setPatientName(user.name);
+    setPatientEmail(user.email);
+
+    // Redirect to profile page dashboard
+    setCurrentPage('profile');
+  };
+
+  const handleLogout = () => {
+    setActiveUser(null);
+    localStorage.removeItem('medcare_active_user');
+    setCurrentPage('home');
+    
+    // Clear prefilled fields
+    setPatientName('');
+    setPatientEmail('');
+  };
+
+  // Open Appointment Modal & Auto Prefill
+  const openAppointmentModal = () => {
+    if (activeUser) {
+      setPatientName(activeUser.name);
+      setPatientEmail(activeUser.email);
+    }
+    setIsAppointmentOpen(true);
+  };
+
   // Submit handler for booking appointments
   const handleAppointmentSubmit = (e) => {
     e.preventDefault();
     
     // Simulate API request and validate fields
     if (patientName.trim() && patientEmail.trim() && appointDate && appointTime) {
-      setAppointmentSuccess(true);
-      console.log("Appointment Booked successfully:", {
+      const newAppointment = {
+        id: Date.now().toString(),
         patientName,
         patientEmail,
         department,
         appointDate,
         appointTime,
         additionalNotes
-      });
+      };
+
+      const updatedAppointments = [...appointments, newAppointment];
+      setAppointments(updatedAppointments);
+      localStorage.setItem('medcare_appointments', JSON.stringify(updatedAppointments));
+
+      setAppointmentSuccess(true);
+      console.log("Appointment Booked successfully:", newAppointment);
     }
   };
 
@@ -60,8 +127,13 @@ function App() {
     setIsAppointmentOpen(false);
     // Timeout to clear success screen after closing animation
     setTimeout(() => {
-      setPatientName('');
-      setPatientEmail('');
+      if (activeUser) {
+        setPatientName(activeUser.name);
+        setPatientEmail(activeUser.email);
+      } else {
+        setPatientName('');
+        setPatientEmail('');
+      }
       setDepartment('Emergency Care');
       setAppointDate('');
       setAppointTime('');
@@ -70,38 +142,43 @@ function App() {
     }, 300);
   };
 
-
-
   return (
     <div className="app-container">
       
       {/* 1. Header Navigation Bar */}
       <Navbar 
-        onOpenAppointment={() => setIsAppointmentOpen(true)} 
+        onOpenAppointment={openAppointmentModal} 
+        activeUser={activeUser}
+        onOpenAuth={(view) => { setAuthView(view); setIsAuthOpen(true); }}
+        onNavigateProfile={() => setCurrentPage('profile')}
+        onNavigateHome={() => setCurrentPage('home')}
+        currentPage={currentPage}
       />
 
-      {/* 2. Hero Section (Welcome + CTAs) */}
-      <Hero onOpenAppointment={() => setIsAppointmentOpen(true)} />
+      {/* 2. Page Content Routing */}
+      {currentPage === 'home' ? (
+        <>
+          {/* Landing Page Content */}
+          <Hero onOpenAppointment={openAppointmentModal} />
+          <About />
+          <Services />
+          <WhyChooseUs />
+          <Doctors onOpenAppointment={openAppointmentModal} />
+          <Testimonials />
+          <Contact />
+        </>
+      ) : (
+        /* Patient Profile Page Dashboard View */
+        <ProfilePage 
+          activeUser={activeUser}
+          appointments={appointments}
+          onLogout={handleLogout}
+          onOpenAppointment={openAppointmentModal}
+          onGoHome={() => setCurrentPage('home')}
+        />
+      )}
 
-      {/* 3. About Us Section (Hospital Bio & Statistics) */}
-      <About />
-
-      {/* 4. Services Grid (Clinical Departments) */}
-      <Services />
-
-      {/* 5. Why Choose Us Section (Hospital Advantages) */}
-      <WhyChooseUs />
-
-      {/* 6. Qualified Specialist Doctors (Dynamic Props Demonstration) */}
-      <Doctors onOpenAppointment={() => setIsAppointmentOpen(true)} />
-
-      {/* 7. Patient Testimonials (Reviews & Social Proof) */}
-      <Testimonials />
-
-      {/* 8. Contact Information & Interactive Message Form */}
-      <Contact />
-
-      {/* 9. Site Footer (Links, Support, & Social Networks) */}
+      {/* 3. Site Footer (Links, Support, & Social Networks) */}
       <Footer />
 
 
@@ -112,7 +189,6 @@ function App() {
       {/* A. BOOK APPOINTMENT MODAL */}
       {isAppointmentOpen && (
         <div className="modal-overlay" onClick={closeAppointmentModal}>
-          {/* Stop propagation so clicking inside the modal content doesn't close it */}
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             
             <button className="modal-close-btn" onClick={closeAppointmentModal} aria-label="Close Modal">
@@ -150,6 +226,7 @@ function App() {
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="John Doe" 
                         required 
+                        disabled={activeUser ? true : false}
                       />
                     </div>
 
@@ -162,6 +239,7 @@ function App() {
                         onChange={(e) => setPatientEmail(e.target.value)}
                         placeholder="johndoe@example.com" 
                         required 
+                        disabled={activeUser ? true : false}
                       />
                     </div>
 
@@ -227,7 +305,13 @@ function App() {
         </div>
       )}
 
-
+      {/* B. AUTHENTICATION MODAL (LOGIN/SIGNUP) */}
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        initialView={authView}
+        onAuthSuccess={handleAuthSuccess}
+      />
 
     </div>
   );
