@@ -58,7 +58,7 @@ const Doctors = ({ onOpenAppointment }) => {
   const doctorsList = [
     {
       id: "doc-1",
-      name: "Dr. Sarah Jenkins",
+      name: "Dr. Priya Sharma",
       specialty: "Cardiologist",
       experience: "12 Years",
       rating: "4.9",
@@ -66,7 +66,7 @@ const Doctors = ({ onOpenAppointment }) => {
     },
     {
       id: "doc-2",
-      name: "Dr. Marcus Vance",
+      name: "Dr. Rajesh Iyer",
       specialty: "Neurologist",
       experience: "15 Years",
       rating: "5.0",
@@ -74,7 +74,7 @@ const Doctors = ({ onOpenAppointment }) => {
     },
     {
       id: "doc-3",
-      name: "Dr. David Kim",
+      name: "Dr. Amit Patel",
       specialty: "Orthopedic Surgeon",
       experience: "14 Years",
       rating: "4.9",

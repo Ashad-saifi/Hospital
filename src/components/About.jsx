@@ -85,7 +85,7 @@ const About = () => {
             </div>
             <div>
               <h5>Need Urgent Care or Consulting?</h5>
-              <p>Call our hotline at <strong>1-800-555-CARE</strong> for immediate guidance.</p>
+              <p>Call our hotline at <strong>1800-889-2555</strong> for immediate guidance.</p>
             </div>
           </div>
         </div>

@@ -12,7 +12,7 @@ const Testimonials = () => {
   const testimonials = [
     {
       id: "test-1",
-      name: "Robert Miller",
+      name: "Rahul Mehta",
       role: "Orthopedic Patient",
       review: "The care and attention I received at MedCare was outstanding. The clinical surgical staff were highly supportive, explaining my rehabilitation schedule in full detail. Excellent support!",
       rating: 5,
@@ -20,15 +20,15 @@ const Testimonials = () => {
     },
     {
       id: "test-2",
-      name: "Emily Watson",
+      name: "Ananya Verma",
       role: "Cardiology Patient",
-      review: "I am incredibly grateful to the cardiology department. The emergency diagnostic and fast report retrieval helped us identify the heart blockage immediately. Dr. Jenkins is an absolute life-saver.",
+      review: "I am incredibly grateful to the cardiology department. The emergency diagnostic and fast report retrieval helped us identify the heart blockage immediately. Dr. Sharma is an absolute life-saver.",
       rating: 5,
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop"
     },
     {
       id: "test-3",
-      name: "James Chen",
+      name: "Aarav Singhal",
       role: "General Checkup",
       review: "The online booking process is incredibly simple. I walked in, got my radiology scan done within 15 minutes, and accessed my prescription directly on the client portal. Highly recommend MedCare!",
       rating: 5,

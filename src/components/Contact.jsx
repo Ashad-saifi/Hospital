@@ -70,7 +70,7 @@ const Contact = () => {
               </div>
               <div className="contact-card-details">
                 <span className="card-label">24/7 Emergency Line</span>
-                <a href="tel:18005559111" className="card-value font-highlight">1-800-555-9111</a>
+                <a href="tel:18008899111" className="card-value font-highlight">1800-889-9111</a>
                 <p className="card-desc">Call this number for instant dispatch services.</p>
               </div>
             </div>
@@ -82,7 +82,7 @@ const Contact = () => {
               </div>
               <div className="contact-card-details">
                 <span className="card-label">General Enquiries</span>
-                <a href="tel:18005552273" className="card-value">1-800-555-CARE</a>
+                <a href="tel:18008892555" className="card-value">1800-889-2555</a>
                 <p className="card-desc">For booking questions & clinical rosters.</p>
               </div>
             </div>
@@ -106,7 +106,7 @@ const Contact = () => {
               </div>
               <div className="contact-card-details">
                 <span className="card-label">Hospital Location</span>
-                <span className="card-value text-base">450 Medical Plaza, Suite A, New York, NY</span>
+                <span className="card-value text-base">78, Okhla Industrial Area, Phase-III, New Delhi, Delhi 110020</span>
                 <p className="card-desc">Ample underground patient parking available.</p>
               </div>
             </div>
@@ -151,7 +151,7 @@ const Contact = () => {
                     id="contact-name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="John Doe"
+                    placeholder="Amit Sharma"
                     required
                   />
                 </div>
@@ -164,7 +164,7 @@ const Contact = () => {
                     id="contact-email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="johndoe@example.com"
+                    placeholder="amit.sharma@example.com"
                     required
                   />
                 </div>

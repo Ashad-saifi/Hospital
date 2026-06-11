@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { X, CheckCircle } from 'lucide-react';
 import './App.css';
 
@@ -24,18 +25,16 @@ import ProfilePage from './components/ProfilePage';
  * 3. Conditional Rendering: Swaps landing page with ProfilePage.
  */
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isLoggingOutRef = useRef(false);
+
   // --- STATE HOOKS ---
   
   // User Authentication State
   const [activeUser, setActiveUser] = useState(() => {
     const storedActive = localStorage.getItem('medcare_active_user');
     return storedActive ? JSON.parse(storedActive) : null;
-  });
-
-  // Page Navigation State ('home' or 'profile')
-  const [currentPage, setCurrentPage] = useState(() => {
-    const storedActive = localStorage.getItem('medcare_active_user');
-    return storedActive ? 'profile' : 'home';
   });
 
   // Modal toggle state variables
@@ -63,6 +62,16 @@ function App() {
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [appointmentSuccess, setAppointmentSuccess] = useState(false);
 
+  // Trigger login modal if redirected from guard
+  useEffect(() => {
+    if (location.state?.showLogin) {
+      setAuthView('login');
+      setIsAuthOpen(true);
+      // Clear the state so it doesn't reopen on subsequent actions
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
   // --- EVENT HANDLERS ---
   
   // Auth handlers
@@ -75,17 +84,32 @@ function App() {
     setPatientEmail(user.email);
 
     // Redirect to profile page dashboard
-    setCurrentPage('profile');
+    navigate('/profile');
   };
 
   const handleLogout = () => {
+    isLoggingOutRef.current = true;
     setActiveUser(null);
     localStorage.removeItem('medcare_active_user');
-    setCurrentPage('home');
     
     // Clear prefilled fields
     setPatientName('');
     setPatientEmail('');
+
+    navigate('/', { replace: true });
+  };
+
+  // Update user profile details
+  const handleUpdateProfile = (updatedUser) => {
+    setActiveUser(updatedUser);
+    localStorage.setItem('medcare_active_user', JSON.stringify(updatedUser));
+    
+    setPatientName(updatedUser.name);
+    setPatientEmail(updatedUser.email);
+    
+    const users = JSON.parse(localStorage.getItem('medcare_users') || '[]');
+    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    localStorage.setItem('medcare_users', JSON.stringify(updatedUsers));
   };
 
   // Open Appointment Modal & Auto Prefill
@@ -93,8 +117,11 @@ function App() {
     if (activeUser) {
       setPatientName(activeUser.name);
       setPatientEmail(activeUser.email);
+      setIsAppointmentOpen(true);
+    } else {
+      setAuthView('login');
+      setIsAuthOpen(true);
     }
-    setIsAppointmentOpen(true);
   };
 
   // Submit handler for booking appointments
@@ -122,6 +149,16 @@ function App() {
     }
   };
 
+  // Cancel an appointment
+  const handleCancelAppointment = (appointmentId) => {
+    if (window.confirm("Are you sure you want to cancel this appointment?")) {
+      const updatedAppointments = appointments.filter(app => app.id !== appointmentId);
+      setAppointments(updatedAppointments);
+      localStorage.setItem('medcare_appointments', JSON.stringify(updatedAppointments));
+      console.log("Appointment cancelled successfully:", appointmentId);
+    }
+  };
+
   // Reset appointment form and close modal
   const closeAppointmentModal = () => {
     setIsAppointmentOpen(false);
@@ -145,41 +182,52 @@ function App() {
   return (
     <div className="app-container">
       
-      {/* 1. Header Navigation Bar */}
-      <Navbar 
-        onOpenAppointment={openAppointmentModal} 
-        activeUser={activeUser}
-        onOpenAuth={(view) => { setAuthView(view); setIsAuthOpen(true); }}
-        onNavigateProfile={() => setCurrentPage('profile')}
-        onNavigateHome={() => setCurrentPage('home')}
-        currentPage={currentPage}
-      />
+      {/* Page Content Routing */}
+      <Routes>
+        <Route path="/" element={
+          <>
+            {/* Header Navigation Bar (Home Localised) */}
+            <Navbar 
+              onOpenAppointment={openAppointmentModal} 
+              activeUser={activeUser}
+              onOpenAuth={(view) => { setAuthView(view); setIsAuthOpen(true); }}
+            />
+            {/* Landing Page Content */}
+            <Hero onOpenAppointment={openAppointmentModal} />
+            <About />
+            <Services onOpenAppointment={openAppointmentModal} />
+            <WhyChooseUs />
+            <Doctors onOpenAppointment={openAppointmentModal} />
+            <Testimonials />
+            <Contact />
+            {/* Site Footer (Home Localised) */}
+            <Footer />
+          </>
+        } />
 
-      {/* 2. Page Content Routing */}
-      {currentPage === 'home' ? (
-        <>
-          {/* Landing Page Content */}
-          <Hero onOpenAppointment={openAppointmentModal} />
-          <About />
-          <Services />
-          <WhyChooseUs />
-          <Doctors onOpenAppointment={openAppointmentModal} />
-          <Testimonials />
-          <Contact />
-        </>
-      ) : (
-        /* Patient Profile Page Dashboard View */
-        <ProfilePage 
-          activeUser={activeUser}
-          appointments={appointments}
-          onLogout={handleLogout}
-          onOpenAppointment={openAppointmentModal}
-          onGoHome={() => setCurrentPage('home')}
-        />
-      )}
+        <Route path="/profile" element={
+          activeUser ? (
+            /* Patient Profile Page Dashboard View (Independent Layout) */
+            <ProfilePage 
+              activeUser={activeUser}
+              appointments={appointments}
+              onLogout={handleLogout}
+              onOpenAppointment={openAppointmentModal}
+              onCancelAppointment={handleCancelAppointment}
+              onUpdateProfile={handleUpdateProfile}
+            />
+          ) : (
+            (() => {
+              const showLogin = !isLoggingOutRef.current;
+              isLoggingOutRef.current = false;
+              return <Navigate to="/" replace state={{ showLogin }} />;
+            })()
+          )
+        } />
 
-      {/* 3. Site Footer (Links, Support, & Social Networks) */}
-      <Footer />
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
 
       {/* ==========================================
@@ -224,7 +272,7 @@ function App() {
                         id="modal-name" 
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
-                        placeholder="John Doe" 
+                        placeholder="Amit Sharma" 
                         required 
                         disabled={activeUser ? true : false}
                       />
@@ -237,7 +285,7 @@ function App() {
                         id="modal-email" 
                         value={patientEmail}
                         onChange={(e) => setPatientEmail(e.target.value)}
-                        placeholder="johndoe@example.com" 
+                        placeholder="amit.sharma@example.com" 
                         required 
                         disabled={activeUser ? true : false}
                       />

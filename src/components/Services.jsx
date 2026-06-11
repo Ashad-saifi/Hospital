@@ -17,7 +17,7 @@ import {
  * 2. map() Function: Iterates over the array and yields a JSX card structure for each service.
  * 3. React key Prop: Assigned unique values (`service.id`) so React can efficiently track and re-render list items.
  */
-const Services = () => {
+const Services = ({ onOpenAppointment }) => {
   // Service cards data array
   const servicesData = [
     {
@@ -112,6 +112,13 @@ const Services = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Action Button to Book Appointment */}
+        <div className="services-action text-center" style={{ marginTop: '40px' }}>
+          <button onClick={onOpenAppointment} className="btn btn-primary">
+            Book Appointment
+          </button>
         </div>
 
       </div>

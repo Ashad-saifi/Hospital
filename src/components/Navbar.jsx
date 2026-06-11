@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Activity, User, Home } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Activity, User } from 'lucide-react';
 
 /**
  * Navbar Component
  * 
  * Concept Explanations:
- * 1. Props: Receives callback functions to trigger booking, auth, page navigation and active user sessions.
+ * 1. Props: Receives callback functions to trigger booking, auth, and active user sessions.
  * 2. useState: Manages local UI states like `isMobileMenuOpen` and `isScrolled`.
  */
-const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, onNavigateHome, currentPage }) => {
+const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,21 +30,41 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
 
   const handleNavClick = (sectionId) => {
     setIsMobileMenuOpen(false);
-    onNavigateHome();
-    // Use timeout to allow the landing page to mount before scrolling
-    setTimeout(() => {
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+    } else {
       const element = document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
-    }, 100);
+    }
   };
 
   const handleHomeClick = () => {
     setIsMobileMenuOpen(false);
-    onNavigateHome();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
+
+  const handleDashboardClick = () => {
+    setIsMobileMenuOpen(false);
+    navigate('/profile');
+  };
+
+  const isHome = location.pathname === '/';
+  const isProfile = location.pathname === '/profile';
 
   return (
     <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
@@ -57,7 +80,7 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
 
         {/* Desktop Navigation Links */}
         <ul className="nav-links">
-          <li><button onClick={handleHomeClick} className={`nav-item ${currentPage === 'home' ? 'active-nav' : ''}`}>Home</button></li>
+          <li><button onClick={handleHomeClick} className={`nav-item ${isHome ? 'active-nav' : ''}`}>Home</button></li>
           <li><button onClick={() => handleNavClick('about')} className="nav-item">About</button></li>
           <li><button onClick={() => handleNavClick('services')} className="nav-item">Services</button></li>
           <li><button onClick={() => handleNavClick('why-choose-us')} className="nav-item">Why Us</button></li>
@@ -66,8 +89,8 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
           {activeUser && (
             <li>
               <button 
-                onClick={onNavigateProfile} 
-                className={`nav-item ${currentPage === 'profile' ? 'active-nav' : ''}`}
+                onClick={handleDashboardClick} 
+                className={`nav-item ${isProfile ? 'active-nav' : ''}`}
               >
                 Dashboard
               </button>
@@ -77,14 +100,10 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
 
         {/* Action Buttons (Desktop) */}
         <div className="nav-actions">
-          <button className="btn btn-outline" onClick={onOpenAppointment}>
-            Book Appointment
-          </button>
-          
           {activeUser ? (
             <button 
-              className={`user-profile-pill ${currentPage === 'profile' ? 'active-pill' : ''}`} 
-              onClick={onNavigateProfile} 
+              className={`user-profile-pill ${isProfile ? 'active-pill' : ''}`} 
+              onClick={handleDashboardClick} 
               aria-label="Open User Profile"
             >
               <div className="avatar-circle">
@@ -94,14 +113,18 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
             </button>
           ) : (
             <>
-              <button className="btn btn-outline btn-login-nav" onClick={() => onOpenAuth('login')}>
+              <button className="btn-signin" onClick={() => onOpenAuth('login')}>
                 Sign In
               </button>
-              <button className="btn btn-primary" onClick={() => onOpenAuth('signup')}>
+              <button className="btn-register-outline" onClick={() => onOpenAuth('signup')}>
                 Register
               </button>
             </>
           )}
+
+          <button className="btn-book-primary" onClick={onOpenAppointment}>
+            Book Appointment
+          </button>
         </div>
 
         {/* Mobile Hamburger Toggle */}
@@ -125,18 +148,14 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
           <button onClick={() => handleNavClick('doctors')} className="mobile-nav-item">Doctors</button>
           <button onClick={() => handleNavClick('contact')} className="mobile-nav-item">Contact</button>
           {activeUser && (
-            <button onClick={() => { setIsMobileMenuOpen(false); onNavigateProfile(); }} className="mobile-nav-item">
+            <button onClick={handleDashboardClick} className="mobile-nav-item">
               Dashboard
             </button>
           )}
 
           <div className="mobile-nav-actions">
-            <button className="btn btn-outline w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAppointment(); }}>
-              Book Appointment
-            </button>
-            
             {activeUser ? (
-              <button className="btn btn-primary w-full" onClick={() => { setIsMobileMenuOpen(false); onNavigateProfile(); }}>
+              <button className="btn btn-primary w-full" onClick={handleDashboardClick}>
                 <User size={16} /> My Dashboard
               </button>
             ) : (
@@ -144,11 +163,15 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth, onNavigateProfile, 
                 <button className="btn btn-outline w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('login'); }}>
                   Sign In
                 </button>
-                <button className="btn btn-primary w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('signup'); }}>
+                <button className="btn btn-outline w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('signup'); }}>
                   Register
                 </button>
               </div>
             )}
+            
+            <button className="btn btn-primary w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAppointment(); }}>
+              Book Appointment
+            </button>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Activity, PhoneCall } from 'lucide-react';
 
 /**
@@ -10,15 +11,34 @@ import { Activity, PhoneCall } from 'lucide-react';
  */
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleScrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleScrollToSection = (sectionId) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+    } else {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -81,9 +101,9 @@ const Footer = () => {
         <div className="footer-column contact-column">
           <h4 className="footer-title">Support Desk</h4>
           <address className="footer-address">
-            <p>450 Medical Plaza, Suite A</p>
-            <p>New York, NY 10016</p>
-            <p className="mt-2">Phone: <a href="tel:18005552273">1-800-555-CARE</a></p>
+            <p>78, Okhla Industrial Area, Phase-III</p>
+            <p>New Delhi, Delhi 110020</p>
+            <p className="mt-2">Phone: <a href="tel:18008892555">1800-889-2555</a></p>
             <p>Email: <a href="mailto:support@medcare.com">support@medcare.com</a></p>
           </address>
           
@@ -91,7 +111,7 @@ const Footer = () => {
             <PhoneCall size={16} className="emergency-icon-pulse" />
             <div>
               <span>Emergency 24/7 Hotline:</span>
-              <a href="tel:18005559111" className="emergency-number">1-800-555-9111</a>
+              <a href="tel:18008899111" className="emergency-number">1800-889-9111</a>
             </div>
           </div>
         </div>
