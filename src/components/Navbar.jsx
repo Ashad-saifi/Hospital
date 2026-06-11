@@ -23,7 +23,7 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
         setIsScrolled(false);
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -88,8 +88,8 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
           <li><button onClick={() => handleNavClick('contact')} className="nav-item">Contact</button></li>
           {activeUser && (
             <li>
-              <button 
-                onClick={handleDashboardClick} 
+              <button
+                onClick={handleDashboardClick}
                 className={`nav-item ${isProfile ? 'active-nav' : ''}`}
               >
                 Dashboard
@@ -101,9 +101,9 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
         {/* Action Buttons (Desktop) */}
         <div className="nav-actions">
           {activeUser ? (
-            <button 
-              className={`user-profile-pill ${isProfile ? 'active-pill' : ''}`} 
-              onClick={handleDashboardClick} 
+            <button
+              className={`user-profile-pill ${isProfile ? 'active-pill' : ''}`}
+              onClick={handleDashboardClick}
               aria-label="Open User Profile"
             >
               <div className="avatar-circle">
@@ -114,10 +114,10 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
           ) : (
             <>
               <button className="btn-signin" onClick={() => onOpenAuth('login')}>
-                Sign In
+                Login
               </button>
               <button className="btn-register-outline" onClick={() => onOpenAuth('signup')}>
-                Register
+                Signup
               </button>
             </>
           )}
@@ -161,14 +161,14 @@ const Navbar = ({ onOpenAppointment, activeUser, onOpenAuth }) => {
             ) : (
               <div className="mobile-auth-buttons-col">
                 <button className="btn btn-outline w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('login'); }}>
-                  Sign In
+                  Login
                 </button>
                 <button className="btn btn-outline w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('signup'); }}>
-                  Register
+                  Signup
                 </button>
               </div>
             )}
-            
+
             <button className="btn btn-primary w-full" onClick={() => { setIsMobileMenuOpen(false); onOpenAppointment(); }}>
               Book Appointment
             </button>

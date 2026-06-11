@@ -96,7 +96,7 @@ const ProfilePage = ({
       ) : (
         <div className="profile-appointments-grid">
           {userAppointments.map((app, index) => (
-            <div key={app.id || index} className="profile-appointment-card">
+            <div key={app._id || app.id || index} className="profile-appointment-card">
               <div className="app-card-left">
                 <div className="app-icon-badge">
                   <Calendar size={20} />
@@ -121,8 +121,8 @@ const ProfilePage = ({
 
               <div className="app-card-right">
                 <button
-                  id={`cancel-btn-${app.id}`}
-                  onClick={() => onCancelAppointment(app.id)}
+                  id={`cancel-btn-${app._id || app.id}`}
+                  onClick={() => onCancelAppointment(app._id || app.id)}
                   className="btn-cancel-appt"
                   title="Cancel Appointment"
                 >
@@ -494,7 +494,7 @@ const ProfilePage = ({
                 {activeUser.name.charAt(0).toUpperCase()}
               </div>
               <h3>{activeUser.name}</h3>
-              <span className="profile-role-badge">Patient ID: #{activeUser.id.substring(activeUser.id.length - 6)}</span>
+              <span className="profile-role-badge">Patient ID: #{((activeUser._id || activeUser.id || '').substring((activeUser._id || activeUser.id || '').length - 6))}</span>
 
               <div className="profile-meta-list">
                 <div className="profile-meta-item">

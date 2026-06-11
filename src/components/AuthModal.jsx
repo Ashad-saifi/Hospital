@@ -76,46 +76,63 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login', onAuthSuccess }) =>
     setError('');
     setIsLoading(true);
     const isLogin = view === 'login';
-    const users = JSON.parse(localStorage.getItem('medcare_users') || '[]');
 
-    setTimeout(() => {
-      if (isLogin) {
-        const found = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase() && u.password === formData.password);
-        if (found) {
-          onAuthSuccess(found);
+    if (isLogin) {
+      fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Invalid login credentials.');
+          return data;
+        })
+        .then(user => {
+          onAuthSuccess(user);
           onClose();
-        } else {
-          setError('Invalid email or password.');
+        })
+        .catch(err => {
+          setError(err.message);
           setIsLoading(false);
-        }
-      } else {
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match.');
-          setIsLoading(false);
-          return;
-        }
-        if (users.some(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
-          setError('An account with this email already exists.');
-          setIsLoading(false);
-          return;
-        }
-        const newUser = {
-          id: Date.now().toString(),
+        });
+    } else {
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match.');
+        setIsLoading(false);
+        return;
+      }
+
+      fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: formData.name,
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
-          age: parseInt(formData.age, 10),
+          age: formData.age,
           gender: formData.gender,
-          bloodGroup: formData.bloodGroup,
-        };
-        users.push(newUser);
-        localStorage.setItem('medcare_users', JSON.stringify(users));
-        onAuthSuccess(newUser);
-        onClose();
-        setIsLoading(false);
-      }
-    }, isLogin ? 1000 : 1200);
+          bloodGroup: formData.bloodGroup
+        })
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Registration failed.');
+          return data;
+        })
+        .then(user => {
+          onAuthSuccess(user);
+          onClose();
+        })
+        .catch(err => {
+          setError(err.message);
+          setIsLoading(false);
+        });
+    }
   };
 
   const toggleBtn = (show, setter) => (
@@ -168,7 +185,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login', onAuthSuccess }) =>
                   onClick={() => { setView(v); setError(''); }}
                   disabled={isLoading}
                 >
-                  {v === 'login' ? 'Sign In' : 'Register'}
+                  {v === 'login' ? 'Login' : 'Signup'}
                 </button>
               ))}
             </div>
@@ -187,7 +204,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login', onAuthSuccess }) =>
                   <button type="button" className="auth-forgot-link" onClick={() => alert('Password reset link sent to your email.')}>Forgot Password?</button>
                 </div>
                 <button type="submit" className="auth-submit-btn" disabled={isLoading}>
-                  {isLoading ? <><Loader2 size={18} className="spinner-icon" /> Authenticating...</> : 'Sign In to Dashboard'}
+                  {isLoading ? <><Loader2 size={18} className="spinner-icon" /> Authenticating...</> : 'Login to Dashboard'}
                 </button>
               </form>
             ) : (
@@ -209,7 +226,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login', onAuthSuccess }) =>
                   <FormSelect label="Blood Group" id="bloodGroup" icon={Heart} value={formData.bloodGroup} onChange={handleChange} disabled={isLoading} options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
                 </div>
                 <button type="submit" className="auth-submit-btn" disabled={isLoading}>
-                  {isLoading ? <><Loader2 size={18} className="spinner-icon" /> Creating Account...</> : 'Register Account'}
+                  {isLoading ? <><Loader2 size={18} className="spinner-icon" /> Creating Account...</> : 'Signup Account'}
                 </button>
               </form>
             )}

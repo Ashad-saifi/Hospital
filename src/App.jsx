@@ -72,6 +72,30 @@ function App() {
     }
   }, [location, navigate]);
 
+  // Reset logging out flag when landing back on the home page
+  useEffect(() => {
+    if (location.pathname === '/' && isLoggingOutRef.current) {
+      isLoggingOutRef.current = false;
+    }
+  }, [location.pathname]);
+
+  // Fetch appointments for active user on login
+  useEffect(() => {
+    if (activeUser) {
+      fetch(`http://localhost:5000/api/appointments?email=${encodeURIComponent(activeUser.email)}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch appointments');
+          return res.json();
+        })
+        .then(data => {
+          setAppointments(data);
+        })
+        .catch(err => console.error('Error fetching appointments:', err));
+    } else {
+      setAppointments([]);
+    }
+  }, [activeUser]);
+
   // --- EVENT HANDLERS ---
   
   // Auth handlers
@@ -101,15 +125,25 @@ function App() {
 
   // Update user profile details
   const handleUpdateProfile = (updatedUser) => {
-    setActiveUser(updatedUser);
-    localStorage.setItem('medcare_active_user', JSON.stringify(updatedUser));
-    
-    setPatientName(updatedUser.name);
-    setPatientEmail(updatedUser.email);
-    
-    const users = JSON.parse(localStorage.getItem('medcare_users') || '[]');
-    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-    localStorage.setItem('medcare_users', JSON.stringify(updatedUsers));
+    fetch('http://localhost:5000/api/users/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedUser)
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to update profile');
+        return res.json();
+      })
+      .then(data => {
+        setActiveUser(data);
+        localStorage.setItem('medcare_active_user', JSON.stringify(data));
+        setPatientName(data.name);
+        setPatientEmail(data.email);
+      })
+      .catch(err => {
+        console.error('Error updating profile:', err);
+        alert('Failed to save profile changes. Please try again.');
+      });
   };
 
   // Open Appointment Modal & Auto Prefill
@@ -128,10 +162,8 @@ function App() {
   const handleAppointmentSubmit = (e) => {
     e.preventDefault();
     
-    // Simulate API request and validate fields
     if (patientName.trim() && patientEmail.trim() && appointDate && appointTime) {
-      const newAppointment = {
-        id: Date.now().toString(),
+      const appData = {
         patientName,
         patientEmail,
         department,
@@ -140,22 +172,47 @@ function App() {
         additionalNotes
       };
 
-      const updatedAppointments = [...appointments, newAppointment];
-      setAppointments(updatedAppointments);
-      localStorage.setItem('medcare_appointments', JSON.stringify(updatedAppointments));
-
-      setAppointmentSuccess(true);
-      console.log("Appointment Booked successfully:", newAppointment);
+      fetch('http://localhost:5000/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appData)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to book appointment');
+          return res.json();
+        })
+        .then(newApp => {
+          const updatedAppointments = [...appointments, newApp];
+          setAppointments(updatedAppointments);
+          setAppointmentSuccess(true);
+          console.log("Appointment Booked successfully:", newApp);
+        })
+        .catch(err => {
+          console.error('Error booking appointment:', err);
+          alert('Failed to schedule appointment. Please try again.');
+        });
     }
   };
 
   // Cancel an appointment
   const handleCancelAppointment = (appointmentId) => {
     if (window.confirm("Are you sure you want to cancel this appointment?")) {
-      const updatedAppointments = appointments.filter(app => app.id !== appointmentId);
-      setAppointments(updatedAppointments);
-      localStorage.setItem('medcare_appointments', JSON.stringify(updatedAppointments));
-      console.log("Appointment cancelled successfully:", appointmentId);
+      fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
+        method: 'DELETE'
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to cancel appointment');
+          return res.json();
+        })
+        .then(() => {
+          const updatedAppointments = appointments.filter(app => (app._id || app.id) !== appointmentId);
+          setAppointments(updatedAppointments);
+          console.log("Appointment cancelled successfully:", appointmentId);
+        })
+        .catch(err => {
+          console.error('Error cancelling appointment:', err);
+          alert('Failed to cancel appointment. Please try again.');
+        });
     }
   };
 
@@ -217,11 +274,7 @@ function App() {
               onUpdateProfile={handleUpdateProfile}
             />
           ) : (
-            (() => {
-              const showLogin = !isLoggingOutRef.current;
-              isLoggingOutRef.current = false;
-              return <Navigate to="/" replace state={{ showLogin }} />;
-            })()
+            <Navigate to="/" replace state={{ showLogin: !isLoggingOutRef.current }} />
           )
         } />
 
