@@ -1,0 +1,28 @@
+$kind: http-request
+name: Update Profile
+method: PUT
+url: '{{baseUrl}}/api/users/{{userId}}'
+order: 8000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "John Updated",
+      "phone": "1234567890",
+      "age": 31,
+      "gender": "Male",
+      "bloodGroup": "A+"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function() { pm.response.to.have.status(200); });
+      pm.test("Name is updated", function() { pm.expect(pm.response.json().name).to.eql('John Updated'); });
+      pm.test("Phone is updated", function() { pm.expect(pm.response.json().phone).to.eql('1234567890'); });
+      pm.test("Response does not contain password", function() { pm.expect(pm.response.json()).to.not.have.property('password'); });
+      pm.test("Email cannot be changed", function() { pm.expect(pm.response.json().email).to.eql('john.doe@example.com'); });
+      pm.test("Response time is less than 2000ms", function() { pm.expect(pm.response.responseTime).to.be.below(2000); });

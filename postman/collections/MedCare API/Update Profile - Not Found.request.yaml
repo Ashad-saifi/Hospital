@@ -1,0 +1,20 @@
+$kind: http-request
+name: 'Update Profile - Not Found'
+method: PUT
+url: '{{baseUrl}}/api/users/u_nonexistent999'
+order: 9000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Ghost User"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 404", function() { pm.response.to.have.status(404); });
+      pm.test("Response has error message", function() { pm.expect(pm.response.json()).to.have.property('error'); });

@@ -16,6 +16,16 @@ import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import ProfilePage from './components/ProfilePage';
 
+import { 
+  apiGetAppointments, 
+  apiBookAppointment, 
+  apiCancelAppointment, 
+  apiUpdateProfile,
+  apiGetDoctors,
+  apiUpdateAppointmentStatus,
+  apiUpdateDoctorProfile
+} from './utils/api';
+
 /**
  * Main Application Component
  * 
@@ -33,8 +43,13 @@ function App() {
   
   // User Authentication State
   const [activeUser, setActiveUser] = useState(() => {
-    const storedActive = localStorage.getItem('medcare_active_user');
-    return storedActive ? JSON.parse(storedActive) : null;
+    try {
+      const storedActive = localStorage.getItem('medcare_active_user');
+      return storedActive ? JSON.parse(storedActive) : null;
+    } catch (err) {
+      console.error("Failed to parse user from localStorage:", err);
+      return null;
+    }
   });
 
   // Modal toggle state variables
@@ -43,18 +58,27 @@ function App() {
   const [authView, setAuthView] = useState('login'); // 'login' or 'signup'
 
   // Global Appointments List State
-  const [appointments, setAppointments] = useState(() => {
-    return JSON.parse(localStorage.getItem('medcare_appointments') || '[]');
-  });
+  // We start with an empty array. The list will be filled by fetching from the backend.
+  const [appointments, setAppointments] = useState([]);
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState('');
 
   // Appointment Form input state variables
   const [patientName, setPatientName] = useState(() => {
-    const storedActive = localStorage.getItem('medcare_active_user');
-    return storedActive ? JSON.parse(storedActive).name : '';
+    try {
+      const storedActive = localStorage.getItem('medcare_active_user');
+      return storedActive ? JSON.parse(storedActive)?.name || '' : '';
+    } catch (err) {
+      return '';
+    }
   });
   const [patientEmail, setPatientEmail] = useState(() => {
-    const storedActive = localStorage.getItem('medcare_active_user');
-    return storedActive ? JSON.parse(storedActive).email : '';
+    try {
+      const storedActive = localStorage.getItem('medcare_active_user');
+      return storedActive ? JSON.parse(storedActive)?.email || '' : '';
+    } catch (err) {
+      return '';
+    }
   });
   const [department, setDepartment] = useState('Emergency Care');
   const [appointDate, setAppointDate] = useState('');
@@ -79,22 +103,39 @@ function App() {
     }
   }, [location.pathname]);
 
-  // Fetch appointments for active user on login
+  // Fetch appointments for the logged-in user from the backend API (Real-time polling)
   useEffect(() => {
-    if (activeUser) {
-      fetch(`http://localhost:5000/api/appointments?email=${encodeURIComponent(activeUser.email)}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch appointments');
-          return res.json();
-        })
-        .then(data => {
-          setAppointments(data);
-        })
-        .catch(err => console.error('Error fetching appointments:', err));
-    } else {
-      setAppointments([]);
+    async function loadAppointments() {
+      if (activeUser) {
+        try {
+          const userApps = await apiGetAppointments(activeUser.email);
+          setAppointments(userApps);
+        } catch (err) {
+          console.error("Failed to load appointments from server:", err);
+        }
+      } else {
+        setAppointments([]);
+      }
     }
+    loadAppointments();
+    const interval = setInterval(loadAppointments, 4000);
+    return () => clearInterval(interval);
   }, [activeUser]);
+
+  // Fetch doctors list from backend (Real-time polling)
+  useEffect(() => {
+    async function loadDoctors() {
+      try {
+        const data = await apiGetDoctors();
+        setDoctorsList(data);
+      } catch (err) {
+        console.error("Failed to load doctors list:", err);
+      }
+    }
+    loadDoctors();
+    const interval = setInterval(loadDoctors, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- EVENT HANDLERS ---
   
@@ -123,34 +164,81 @@ function App() {
     navigate('/', { replace: true });
   };
 
-  // Update user profile details
-  const handleUpdateProfile = (updatedUser) => {
-    fetch('http://localhost:5000/api/users/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedUser)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to update profile');
-        return res.json();
-      })
-      .then(data => {
-        setActiveUser(data);
-        localStorage.setItem('medcare_active_user', JSON.stringify(data));
-        setPatientName(data.name);
-        setPatientEmail(data.email);
-      })
-      .catch(err => {
-        console.error('Error updating profile:', err);
-        alert('Failed to save profile changes. Please try again.');
+  // Update user profile details on the backend API
+  const handleUpdateProfile = async (updatedUser) => {
+    try {
+      // Send a PUT request: /api/users/:id to save updated demographics
+      const savedUser = await apiUpdateProfile(updatedUser.id, {
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        age: updatedUser.age,
+        gender: updatedUser.gender,
+        bloodGroup: updatedUser.bloodGroup,
+        height: updatedUser.height,
+        weight: updatedUser.weight,
+        allergies: updatedUser.allergies,
+        chronicConditions: updatedUser.chronicConditions,
+        emergencyContact: updatedUser.emergencyContact,
+        address: updatedUser.address
       });
+      
+      // Update our local active user React state and localStorage (to keep user logged in on reload)
+      setActiveUser(savedUser);
+      localStorage.setItem('medcare_active_user', JSON.stringify(savedUser));
+      
+      // Auto fill appointment fields with new name/email
+      setPatientName(savedUser.name);
+      setPatientEmail(savedUser.email);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert('Failed to save profile changes: ' + err.message);
+    }
+  };
+
+  const handleUpdateDoctorProfile = async (updatedDetails) => {
+    try {
+      const doctorId = activeUser.doctorDetails?.id || activeUser.id;
+      const res = await apiUpdateDoctorProfile(doctorId, updatedDetails);
+      
+      const updatedUser = {
+        ...activeUser,
+        name: res.doctorDetails.name,
+        email: res.doctorDetails.email,
+        doctorDetails: res.doctorDetails
+      };
+      setActiveUser(updatedUser);
+      localStorage.setItem('medcare_active_user', JSON.stringify(updatedUser));
+      
+      // Refresh doctors list
+      const data = await apiGetDoctors();
+      setDoctorsList(data);
+    } catch (err) {
+      console.error("Failed to update doctor profile:", err);
+      alert("Update failed: " + err.message);
+    }
   };
 
   // Open Appointment Modal & Auto Prefill
-  const openAppointmentModal = () => {
+  const openAppointmentModal = async (doctorObjOrId) => {
+    try {
+      const data = await apiGetDoctors();
+      setDoctorsList(data);
+    } catch (err) {
+      console.error("Failed to refresh doctors list:", err);
+    }
+
     if (activeUser) {
       setPatientName(activeUser.name);
       setPatientEmail(activeUser.email);
+      if (doctorObjOrId) {
+        const docId = typeof doctorObjOrId === 'string' ? doctorObjOrId : (doctorObjOrId._id || doctorObjOrId.id);
+        setSelectedDoctorId(docId);
+        if (doctorObjOrId.specialty) {
+          setDepartment(doctorObjOrId.specialty);
+        }
+      } else {
+        setSelectedDoctorId('');
+      }
       setIsAppointmentOpen(true);
     } else {
       setAuthView('login');
@@ -158,61 +246,66 @@ function App() {
     }
   };
 
-  // Submit handler for booking appointments
-  const handleAppointmentSubmit = (e) => {
+  // Submit handler for booking appointments via backend API
+  const handleAppointmentSubmit = async (e) => {
     e.preventDefault();
     
     if (patientName.trim() && patientEmail.trim() && appointDate && appointTime) {
       const appData = {
         patientName,
-        patientEmail,
+        patientEmail: patientEmail.toLowerCase(),
         department,
         appointDate,
         appointTime,
-        additionalNotes
+        additionalNotes,
+        doctorId: selectedDoctorId
       };
 
-      fetch('http://localhost:5000/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(appData)
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to book appointment');
-          return res.json();
-        })
-        .then(newApp => {
-          const updatedAppointments = [...appointments, newApp];
-          setAppointments(updatedAppointments);
-          setAppointmentSuccess(true);
-          console.log("Appointment Booked successfully:", newApp);
-        })
-        .catch(err => {
-          console.error('Error booking appointment:', err);
-          alert('Failed to schedule appointment. Please try again.');
-        });
+      try {
+        // Send a POST request to server: /api/appointments
+        const responseApp = await apiBookAppointment(appData);
+        
+        // Fetch the updated list of appointments from the backend for this patient
+        const updatedApps = await apiGetAppointments(activeUser.email);
+        setAppointments(updatedApps);
+        setAppointmentSuccess(true);
+        console.log("Appointment Booked successfully on backend:", responseApp);
+      } catch (err) {
+        console.error("Failed to book appointment on server:", err);
+        alert("Booking failed: " + err.message);
+      }
     }
   };
 
-  // Cancel an appointment
-  const handleCancelAppointment = (appointmentId) => {
+  // Update appointment status (Confirm/Reject)
+  const handleUpdateAppointmentStatus = async (appointmentId, status) => {
+    try {
+      await apiUpdateAppointmentStatus(appointmentId, status);
+      // Refresh list
+      const updatedApps = await apiGetAppointments(activeUser.email);
+      setAppointments(updatedApps);
+      console.log(`Appointment ${appointmentId} status updated to ${status}`);
+    } catch (err) {
+      console.error("Failed to update appointment status:", err);
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
+  // Cancel an appointment via backend API
+  const handleCancelAppointment = async (appointmentId) => {
     if (window.confirm("Are you sure you want to cancel this appointment?")) {
-      fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
-        method: 'DELETE'
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to cancel appointment');
-          return res.json();
-        })
-        .then(() => {
-          const updatedAppointments = appointments.filter(app => (app._id || app.id) !== appointmentId);
-          setAppointments(updatedAppointments);
-          console.log("Appointment cancelled successfully:", appointmentId);
-        })
-        .catch(err => {
-          console.error('Error cancelling appointment:', err);
-          alert('Failed to cancel appointment. Please try again.');
-        });
+      try {
+        // Send a DELETE request to server: /api/appointments/:id
+        await apiCancelAppointment(appointmentId);
+        
+        // Refresh the appointments list from backend
+        const updatedApps = await apiGetAppointments(activeUser.email);
+        setAppointments(updatedApps);
+        console.log("Appointment cancelled successfully on backend:", appointmentId);
+      } catch (err) {
+        console.error("Failed to cancel appointment on server:", err);
+        alert("Cancellation failed: " + err.message);
+      }
     }
   };
 
@@ -229,12 +322,25 @@ function App() {
         setPatientEmail('');
       }
       setDepartment('Emergency Care');
+      setSelectedDoctorId('');
       setAppointDate('');
       setAppointTime('');
       setAdditionalNotes('');
       setAppointmentSuccess(false);
     }, 300);
   };
+
+  const selectedDoctorObj = doctorsList.find(doc => (doc._id || doc.id) === selectedDoctorId);
+  const isSelectedDoctorOnline = selectedDoctorObj 
+    ? (selectedDoctorObj.isOnline === true || selectedDoctorObj.isOnline === 'true' || selectedDoctorObj.isOnline === undefined) 
+    : true;
+  const recommendedDoctors = selectedDoctorObj && !isSelectedDoctorOnline
+    ? doctorsList.filter(doc => 
+        (doc._id || doc.id) !== selectedDoctorId && 
+        doc.specialty === selectedDoctorObj.specialty && 
+        (doc.isOnline === true || doc.isOnline === 'true' || doc.isOnline === undefined)
+      )
+    : [];
 
   return (
     <div className="app-container">
@@ -254,7 +360,7 @@ function App() {
             <About />
             <Services onOpenAppointment={openAppointmentModal} />
             <WhyChooseUs />
-            <Doctors onOpenAppointment={openAppointmentModal} />
+            <Doctors onOpenAppointment={openAppointmentModal} doctorsList={doctorsList} />
             <Testimonials />
             <Contact />
             {/* Site Footer (Home Localised) */}
@@ -268,10 +374,13 @@ function App() {
             <ProfilePage 
               activeUser={activeUser}
               appointments={appointments}
+              doctorsList={doctorsList}
               onLogout={handleLogout}
               onOpenAppointment={openAppointmentModal}
               onCancelAppointment={handleCancelAppointment}
               onUpdateProfile={handleUpdateProfile}
+              onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
+              onUpdateDoctorProfile={handleUpdateDoctorProfile}
             />
           ) : (
             <Navigate to="/" replace state={{ showLogin: !isLoggingOutRef.current }} />
@@ -358,8 +467,67 @@ function App() {
                         <option value="ICU Departments">ICU Departments</option>
                         <option value="Radiology & Imaging">Radiology & Imaging</option>
                         <option value="Orthopedics">Orthopedics</option>
+                        <option value="General Medicine">General Medicine</option>
                       </select>
                     </div>
+
+                    <div className="form-group">
+                      <label htmlFor="modal-doctor">Attending Doctor <span className="req">*</span></label>
+                      <select 
+                        id="modal-doctor"
+                        value={selectedDoctorId}
+                        onChange={(e) => {
+                          setSelectedDoctorId(e.target.value);
+                          const doc = doctorsList.find(d => (d._id || d.id) === e.target.value);
+                          if (doc && doc.specialty) {
+                            setDepartment(doc.specialty);
+                          }
+                        }}
+                        required
+                      >
+                        <option value="">Select Doctor...</option>
+                        {doctorsList.map(doc => {
+                          const isOnline = doc.isOnline === true || doc.isOnline === 'true' || doc.isOnline === undefined;
+                          return (
+                            <option key={doc._id || doc.id} value={doc._id || doc.id}>
+                              {doc.name} ({doc.specialty}) - {isOnline ? 'Online' : 'Offline'}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    {selectedDoctorId && !isSelectedDoctorOnline && (
+                      <div className="booking-offline-warning" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px', marginBottom: '16px', fontSize: '0.88rem', textAlign: 'left' }}>
+                        <p style={{ color: '#dc2626', fontWeight: 'bold', marginBottom: '8px' }}>
+                          ⚠️ {selectedDoctorObj?.name} is currently Offline. Booking is disabled.
+                        </p>
+                        {recommendedDoctors.length > 0 ? (
+                          <div>
+                            <p style={{ fontWeight: '600', color: '#374151', marginBottom: '6px' }}>Try these available {selectedDoctorObj?.specialty} specialists instead:</p>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                              {recommendedDoctors.map(rec => (
+                                <button
+                                  type="button"
+                                  key={rec._id || rec.id}
+                                  onClick={() => {
+                                    setSelectedDoctorId(rec._id || rec.id);
+                                    if (rec.specialty) {
+                                      setDepartment(rec.specialty);
+                                    }
+                                  }}
+                                  style={{ padding: '6px 12px', borderRadius: '20px', border: '1.5px solid #10b981', backgroundColor: '#ecfdf5', color: '#047857', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                                >
+                                  {rec.name} (Online)
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p style={{ color: '#4b5563' }}>No other online specialists are available in this department right now.</p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="form-group-row">
                       <div className="form-group">
@@ -395,7 +563,15 @@ function App() {
                       />
                     </div>
 
-                    <button type="submit" className="btn btn-primary w-full mt-2">
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary w-full mt-2"
+                      disabled={selectedDoctorId && !isSelectedDoctorOnline}
+                      style={{ 
+                        opacity: (selectedDoctorId && !isSelectedDoctorOnline) ? 0.5 : 1, 
+                        cursor: (selectedDoctorId && !isSelectedDoctorOnline) ? 'not-allowed' : 'pointer' 
+                      }}
+                    >
                       Request Appointment
                     </button>
                   </form>

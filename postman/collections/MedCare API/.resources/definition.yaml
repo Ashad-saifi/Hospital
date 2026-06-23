@@ -1,0 +1,3 @@
+$kind: collection
+name: MedCare API
+description: 'Collection for testing the MedCare Hospital backend API (Express + MongoDB). Base URL: {{baseUrl}}'

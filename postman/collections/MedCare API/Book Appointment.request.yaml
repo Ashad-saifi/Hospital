@@ -1,0 +1,29 @@
+$kind: http-request
+name: Book Appointment
+method: POST
+url: '{{baseUrl}}/api/appointments'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "patientName": "John Doe",
+      "patientEmail": "john.doe@example.com",
+      "department": "Cardiology",
+      "appointDate": "2026-07-15",
+      "appointTime": "10:00 AM",
+      "additionalNotes": "First visit"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 201", function() { pm.response.to.have.status(201); });
+      pm.test("Response has appointment id", function() { pm.expect(pm.response.json()).to.have.property('id'); });
+      pm.test("Department matches", function() { pm.expect(pm.response.json().department).to.eql('Cardiology'); });
+      pm.test("Patient email is lowercase", function() { pm.expect(pm.response.json().patientEmail).to.eql('john.doe@example.com'); });
+      pm.test("Response time is less than 2000ms", function() { pm.expect(pm.response.responseTime).to.be.below(2000); });
+      pm.environment.set("appointmentId", pm.response.json().id);

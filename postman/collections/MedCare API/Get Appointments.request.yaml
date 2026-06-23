@@ -1,0 +1,22 @@
+$kind: http-request
+name: Get Appointments
+method: GET
+url: '{{baseUrl}}/api/appointments'
+order: 5000
+queryParams:
+  - key: email
+    value: john.doe@example.com
+    disabled: false
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function() { pm.response.to.have.status(200); });
+      pm.test("Response is an array", function() { pm.expect(pm.response.json()).to.be.an('array'); });
+      pm.test("All appointments belong to the queried email", function() {
+        var appointments = pm.response.json();
+        appointments.forEach(function(appt) {
+          pm.expect(appt.patientEmail).to.eql('john.doe@example.com');
+        });
+      });
+      pm.test("Response time is less than 2000ms", function() { pm.expect(pm.response.responseTime).to.be.below(2000); });

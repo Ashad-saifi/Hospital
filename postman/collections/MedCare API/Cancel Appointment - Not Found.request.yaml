@@ -1,0 +1,11 @@
+$kind: http-request
+name: 'Cancel Appointment - Not Found'
+method: DELETE
+url: '{{baseUrl}}/api/appointments/app_nonexistent999'
+order: 7000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 404", function() { pm.response.to.have.status(404); });
+      pm.test("Response has error message", function() { pm.expect(pm.response.json()).to.have.property('error'); });

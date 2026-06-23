@@ -273,6 +273,246 @@
   padding-right: 6px;
 }
 
+.role-selection-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 320px;
+  text-align: center;
+  padding: 32px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.88);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.role-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+/* Role Card Flip Styling */
+.role-flip-cards-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 440px;
+  margin: 10px 0;
+}
+
+.role-flip-card {
+  background-color: transparent;
+  width: 180px;
+  height: 220px;
+  perspective: 1000px; /* Enable 3D transitions */
+  cursor: pointer;
+}
+
+.role-flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+}
+
+/* Flip the inner card on hover */
+.role-flip-card:hover .role-flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.role-flip-card-front, .role-flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Front Styling */
+.role-flip-card-front {
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-white);
+  transition: all 0.3s ease;
+}
+
+.patient-front {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.15) 100%);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.doctor-front {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.role-flip-card:hover .patient-front {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.role-flip-card:hover .doctor-front {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.role-emoji-bg {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -24px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Patient Front Emoji BG */
+.patient-front .role-emoji-bg {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.3) 100%);
+  border: 1.5px solid rgba(59, 130, 246, 0.25);
+}
+
+/* Doctor Front Emoji BG */
+.doctor-front .role-emoji-bg {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.3) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Hover effects for emoji bg */
+.role-flip-card:hover .patient-front .role-emoji-bg {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.4) 100%);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.2);
+}
+
+.role-flip-card:hover .doctor-front .role-emoji-bg {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.4) 100%);
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.2);
+}
+
+.role-card-emoji {
+  font-size: 3.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+  animation: authFloat 3s ease-in-out infinite alternate;
+}
+
+.role-card-front-label {
+  position: absolute;
+  bottom: 24px;
+  z-index: 3;
+  color: var(--text-dark);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 850;
+  letter-spacing: -0.5px;
+}
+
+/* Back Styling */
+.role-flip-card-back {
+  transform: rotateY(180deg);
+  padding: 16px;
+  color: var(--bg-white);
+  border: 1.5px solid transparent;
+}
+
+.patient-back {
+  background: linear-gradient(135deg, #1e40af 0%, #0284c7 100%);
+  border-color: rgba(30, 64, 175, 0.2);
+}
+
+.doctor-back {
+  background: linear-gradient(135deg, #9e0a88 0%, #10b981 100%);
+  border-color: rgba(158, 10, 136, 0.2);
+}
+
+.role-card-back-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.role-card-icon {
+  margin-top: 10px;
+  opacity: 0.9;
+  animation: authFloat 3s ease-in-out infinite alternate;
+}
+
+.role-card-back-content h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 10px 0 4px 0;
+}
+
+.role-card-back-content p {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.role-action-badge {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--bg-white);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 750;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.role-flip-card:hover .role-action-badge {
+  background-color: var(--bg-white);
+  color: var(--text-dark);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.role-note {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  max-width: 320px;
+}
+
+.auth-form-back {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.auth-back-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.auth-back-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
 /* Custom Webkit scrollbar for form wrapper */
 .auth-form-wrapper::-webkit-scrollbar {
   width: 5px;

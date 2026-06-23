@@ -1,0 +1,25 @@
+$kind: http-request
+name: Login
+method: POST
+url: '{{baseUrl}}/api/auth/login'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "john.doe@example.com",
+      "password": "password123"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function() { pm.response.to.have.status(200); });
+      pm.test("Response has user id", function() { pm.expect(pm.response.json()).to.have.property('id'); });
+      pm.test("Response does not contain password", function() { pm.expect(pm.response.json()).to.not.have.property('password'); });
+      pm.test("Email matches login email", function() { pm.expect(pm.response.json().email).to.eql('john.doe@example.com'); });
+      pm.test("Response time is less than 2000ms", function() { pm.expect(pm.response.responseTime).to.be.below(2000); });
+      pm.environment.set("userId", pm.response.json().id);

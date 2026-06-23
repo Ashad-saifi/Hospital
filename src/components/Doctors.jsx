@@ -53,9 +53,9 @@ const DoctorCard = ({ image, name, specialty, experience, rating, onBook }) => {
  * 1. Props Passing: Maps doctors array data to individual <DoctorCard /> instances.
  * 2. Callback Props: Passes the parent trigger function `onOpenAppointment` down to DoctorCard as `onBook`.
  */
-const Doctors = ({ onOpenAppointment }) => {
-  // Doctors data list
-  const doctorsList = [
+const Doctors = ({ onOpenAppointment, doctorsList = [] }) => {
+  // Static Doctors fallback list
+  const staticDoctorsList = [
     {
       id: "doc-1",
       name: "Dr. Priya Sharma",
@@ -79,8 +79,29 @@ const Doctors = ({ onOpenAppointment }) => {
       experience: "14 Years",
       rating: "4.9",
       image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=400&auto=format&fit=crop"
+    },
+    {
+      id: "doc-4",
+      name: "Dr. Aisha Rahman",
+      specialty: "Pediatrician",
+      experience: "10 Years",
+      rating: "4.8",
+      image: aishaRahmanImg
     }
   ];
+
+  // Map backend doctor properties if available
+  const displayDoctors = doctorsList.length > 0 
+    ? doctorsList.map(doc => ({
+        id: doc._id || doc.id,
+        name: doc.name,
+        specialty: doc.specialty,
+        experience: doc.exp || doc.experience || "10 Years",
+        rating: doc.rating || "4.9",
+        image: doc.image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=400&auto=format&fit=crop",
+        raw: doc
+      }))
+    : staticDoctorsList;
 
   return (
     <section id="doctors" className="doctors-section section-padding">
@@ -98,7 +119,7 @@ const Doctors = ({ onOpenAppointment }) => {
 
         {/* Doctors Card Grid */}
         <div className="doctors-grid">
-          {doctorsList.map((doctor) => (
+          {displayDoctors.map((doctor) => (
             <DoctorCard
               key={doctor.id}
               name={doctor.name}
@@ -106,7 +127,7 @@ const Doctors = ({ onOpenAppointment }) => {
               experience={doctor.experience}
               rating={doctor.rating}
               image={doctor.image}
-              onBook={onOpenAppointment}
+              onBook={() => onOpenAppointment(doctor.raw || doctor)}
             />
           ))}
         </div>

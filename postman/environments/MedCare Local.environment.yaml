@@ -1,0 +1,14 @@
+name: MedCare Local
+values:
+  - key: baseUrl
+    value: 'http://localhost:5000'
+    enabled: true
+    type: default
+  - key: userId
+    value: ''
+    enabled: true
+    type: default
+  - key: appointmentId
+    value: ''
+    enabled: true
+    type: default
